@@ -1,0 +1,70 @@
+services:
+  app:
+    build: .
+    container_name: blog-django-app
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/config
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+    networks:
+      - app-network
+      
+  #MySQL Container
+  database:
+    image: mariadb:10.3-bionic
+    container_name: blog-django-database
+    tty: true
+    ports:
+      - "3306:3306"
+    expose:
+      - '3306'
+    environment:
+      MYSQL_DATABASE: blog-django
+      MYSQL_ROOT_PASSWORD: secret
+    working_dir: /media
+    volumes:
+      - dbdata:/var/lib/mysql/
+    networks:
+      - app-network
+
+  #PhpMyAdmin Container
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: blog-django-phpmyadmin
+    environment:
+      PMA_HOST: blog-django-database
+      PMA_USER: root
+      PMA_PASSWORD: secret
+      MEMORY_LIMIT: 1024M
+      UPLOAD_LIMIT: 1024M
+    ports:
+      - "8081:80"
+    depends_on:
+      - database
+    networks:
+      - app-network
+
+  redis:
+    container_name: blog-django-redis
+    restart: always
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+
+#Volumes
+volumes:
+  dbdata:
+    driver: local
+  redisdata:
